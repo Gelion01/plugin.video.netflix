@@ -35,6 +35,7 @@ class PlaybackController(xbmc.Monitor):
         self.tracking = False
         self.active_player_id = None
         self.action_managers = None
+        self.restore_rpi_useomxplayer_setting = False
 
         AddonSignals.registerSlot(
             g.ADDON.getAddonInfo('id'), common.Signals.PLAYBACK_INITIATED, self.initialize_playback)
@@ -53,6 +54,7 @@ class PlaybackController(xbmc.Monitor):
             ProgressManager(),
             UpNextNotifier()
         ]
+        self.restore_rpi_useomxplayer_setting = data['restore_rpi_useomxplayer_setting']
         self._notify_all(PlaybackActionManager.initialize, data)
 
     def onNotification(self, sender, method, data):
@@ -121,6 +123,8 @@ class PlaybackController(xbmc.Monitor):
     def _on_playback_stopped(self):
         self.tracking = False
         self.active_player_id = None
+        if self.restore_rpi_useomxplayer_setting:
+            common.json_rpc('Settings.SetSettingValue', {'setting': 'videoplayer.useomxplayer', 'value': True})
         # Immediately send the request to release the license
         common.send_signal(signal=common.Signals.RELEASE_LICENSE, non_blocking=True)
         self._notify_all(PlaybackActionManager.on_playback_stopped)

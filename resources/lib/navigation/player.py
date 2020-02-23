@@ -53,6 +53,15 @@ class InputstreamError(Exception):
 def play(videoid):
     """Play an episode or movie as specified by the path"""
     common.info('Playing {}', videoid)
+
+    restore_rpi_useomxplayer_setting = False
+    if 'raspberrypi' in common.get_system_platform():
+        # OMX Player is not compatible with netflix video streams
+        value = common.json_rpc('Settings.GetSettingValue', {'setting': 'videoplayer.useomxplayer'})
+        if value.get('value'):
+            common.json_rpc('Settings.SetSettingValue', {'setting': 'videoplayer.useomxplayer', 'value': False})
+            restore_rpi_useomxplayer_setting = True
+
     is_up_next_enabled = g.ADDON.getSettingBool('UpNextNotifier_enabled')
     metadata = [{}, {}]
     try:
@@ -114,7 +123,8 @@ def play(videoid):
         'timeline_markers': get_timeline_markers(metadata[0]),
         'upnext_info': upnext_info,
         'resume_position': resume_position,
-        'event_data': event_data}, non_blocking=True)
+        'event_data': event_data,
+        'restore_rpi_useomxplayer_setting': restore_rpi_useomxplayer_setting}, non_blocking=True)
     xbmcplugin.setResolvedUrl(
         handle=g.PLUGIN_HANDLE,
         succeeded=True,
